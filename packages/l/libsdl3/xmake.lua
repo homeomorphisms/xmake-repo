@@ -15,6 +15,7 @@ package("libsdl3")
              "https://github.com/libsdl-org/SDL/releases/download/release-$(version)/SDL3-$(version).zip", { alias = "archive" })
     add_urls("https://github.com/libsdl-org/SDL.git", { alias = "github" })
 
+    add_versions("archive:3.4.16", "5f399fdfbc040169ef4418a3cb99ccc5a0641681f7ccc1da66eeec3c97fa4076")
     add_versions("archive:3.4.12", "3d4de8967a49c0451e775a0c1e9022092c19fdef41ba38a83fcf031c5a6496e2")
     add_versions("archive:3.4.4", "6bd4fbb665f77899a488b381c5b6e9681fc57c60b669738f985fea714f3456c5")
     add_versions("archive:3.4.2", "4954d436c95c42aa258d4eb3fb95f8ecc5d7a3dc411f0f41ac2692d34b9b9e9c")
@@ -30,6 +31,7 @@ package("libsdl3")
     add_versions("archive:3.2.2", "58d8adc7068d38923f918e0bdaa9c4948f93d9ba204fe4de8cc6eaaf77ad6f82")
     add_versions("archive:3.2.0", "abe7114fa42edcc8097856787fa5d37f256d97e365b71368b60764fe7c10e4f8")
 
+    add_versions("github:3.4.16", "release-3.4.16")
     add_versions("github:3.4.12", "release-3.4.12")
     add_versions("github:3.4.4", "release-3.4.4")
     add_versions("github:3.4.2", "release-3.4.2")
@@ -58,6 +60,7 @@ package("libsdl3")
 
     if is_plat("wasm") then
         add_cxflags("-sUSE_SDL=0")
+        add_configs("threads", {description = "Enables pthread support", default = false, type = "boolean"})
     end
 
     on_load(function (package)
@@ -66,6 +69,10 @@ package("libsdl3")
             if package:config("wayland") == nil and not package:is_cross() then
                 package:config_set("wayland", true)
             end
+        end
+        if package:is_plat("wasm") and package:config("threads") then
+            package:add("cxflags", "-pthread", "-matomics", "-mbulk-memory")
+            package:add("ldflags", "-pthread")
         end
         if package:is_plat("windows") then
             package:add("deps", "ninja")
@@ -120,6 +127,9 @@ package("libsdl3")
             table.insert(configs, "-DSDL_X11_XTEST=OFF")
             table.insert(configs, "-DSDL_WAYLAND=" .. (package:config("wayland") and "ON" or "OFF"))
             table.insert(configs, "-DSDL_WAYLAND_SHARED=" .. (package:config("wayland_shared") and "ON" or "OFF"))
+        end
+        if package:is_plat("wasm") and package:config("threads") then
+            table.insert(configs, "-DSDL_PTHREADS=ON")
         end
 
         local cflags
